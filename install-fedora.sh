@@ -44,8 +44,8 @@ sudo dnf update -y
 
 # Install development tools
 print_status "Installing development tools..."
-sudo dnf groupinstall -y "Development Tools"
-sudo dnf install -y \
+# For dnf5, we need to install individual packages instead of groupinstall
+sudo dnf5 install -y \
     gcc \
     gcc-c++ \
     make \
@@ -54,7 +54,12 @@ sudo dnf install -y \
     curl \
     wget \
     python3 \
-    python3-pip
+    python3-pip \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    which
 
 # Install Node.js (latest LTS)
 print_status "Installing Node.js..."
@@ -67,7 +72,7 @@ fi
 
 # Install OpenGL and graphics libraries
 print_status "Installing OpenGL and graphics libraries..."
-sudo dnf install -y \
+sudo dnf5 install -y \
     mesa-libGL-devel \
     mesa-libGLU-devel \
     libX11-devel \
@@ -77,18 +82,20 @@ sudo dnf install -y \
     libXinerama-devel \
     libXxf86vm-devel \
     glfw-devel \
-    glew-devel
+    glew-devel \
+    libGL-devel \
+    libGLU-devel
 
 # Install font libraries
 print_status "Installing font libraries..."
-sudo dnf install -y \
+sudo dnf5 install -y \
     fontconfig-devel \
     freetype-devel \
     harfbuzz-devel
 
 # Install Nerd Fonts
 print_status "Installing Nerd Fonts..."
-sudo dnf install -y \
+sudo dnf5 install -y \
     jetbrains-mono-fonts \
     fira-code-fonts
 
@@ -225,8 +232,16 @@ read -p "Do you want to set Nixi Terminal as your default terminal? (y/N): " -n 
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_status "Setting Nixi Terminal as default..."
-    sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator "$REPO_DIR/src/index.js" 100
-    print_success "Nixi Terminal is now the default terminal emulator"
+    # Check if update-alternatives exists
+    if command -v update-alternatives &> /dev/null; then
+        sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator "$REPO_DIR/src/index.js" 100
+        print_success "Nixi Terminal is now the default terminal emulator"
+    else
+        print_warning "update-alternatives not found. Setting default via environment variable..."
+        echo 'export TERMINAL="nixi-terminal"' >> ~/.bashrc
+        echo 'export TERMINAL="nixi-terminal"' >> ~/.zshrc 2>/dev/null || true
+        print_success "Set TERMINAL environment variable to nixi-terminal"
+    fi
 fi
 
 print_success "Enjoy your Nixi Terminal experience! 🚀"

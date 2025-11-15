@@ -1,20 +1,39 @@
-const gl = require('gl');
-const glfw = require('glfw');
-const pty = require('node-pty');
-const path = require('path');
-const fs = require('fs');
+let gl;
+try {
+  gl = require("gl");
+} catch (error) {
+  console.warn("OpenGL bindings not available, GPU acceleration disabled");
+  gl = null;
+}
+
+let glfw;
+try {
+  glfw = require("glfw");
+} catch (error) {
+  console.warn("GLFW not available, window system disabled");
+  glfw = null;
+}
+let pty;
+try {
+  pty = require("node-pty");
+} catch (error) {
+  console.warn("node-pty not available, terminal emulation disabled");
+  pty = null;
+}
+const path = require("path");
+const fs = require("fs");
 
 class Terminal {
   constructor(config = {}) {
     this.config = {
       width: 800,
       height: 600,
-      theme: 'dark',
-      font: { family: 'JetBrains Mono', size: 12 },
+      theme: "dark",
+      font: { family: "JetBrains Mono", size: 12 },
       gpuAcceleration: true,
-      ...config
+      ...config,
     };
-    
+
     this.window = null;
     this.glContext = null;
     this.shell = null;
@@ -23,25 +42,32 @@ class Terminal {
   }
 
   async start() {
-    console.log('Initializing terminal...');
-    
+    console.log("Initializing terminal...");
+
+    // Check if GLFW is available
+    if (!glfw) {
+      console.warn("GLFW not available, running in headless mode");
+      this.config.gpuAcceleration = false;
+      return this.startHeadless();
+    }
+
     // Initialize GLFW
     if (!glfw.init()) {
-      throw new Error('Failed to initialize GLFW');
+      throw new Error("Failed to initialize GLFW");
     }
 
     // Create window
     this.window = glfw.createWindow(
       this.config.width,
       this.config.height,
-      'Nixi Terminal',
+      "Nixi Terminal",
       null,
-      null
+      null,
     );
 
     if (!this.window) {
       glfw.terminate();
-      throw new Error('Failed to create window');
+      throw new Error("Failed to create window");
     }
 
     // Make window context current
@@ -49,7 +75,7 @@ class Terminal {
 
     // Initialize OpenGL
     this.glContext = gl(this.config.width, this.config.height, {
-      preserveDrawingBuffer: true
+      preserveDrawingBuffer: true,
     });
 
     // Initialize renderer
@@ -63,24 +89,30 @@ class Terminal {
     this.setupEventHandlers();
 
     // Emit startup event
-    this.emit('startup');
+    this.emit("startup");
 
     // Start render loop
     this.renderLoop();
   }
 
   initializeShell() {
-    const shell = process.env.SHELL || '/bin/bash';
-    
+    if (!pty) {
+      console.warn("PTY not available, using basic I/O");
+      this.shell = null;
+      return;
+    }
+
+    const shell = process.env.SHELL || "/bin/bash";
+
     this.shell = pty.spawn(shell, [], {
-      name: 'xterm-256color',
+      name: "xterm-256color",
       cols: 80,
       rows: 24,
       cwd: process.cwd(),
-      env: process.env
+      env: process.env,
     });
 
-    this.shell.on('data', (data) => {
+    this.shell.on("data", (data) => {
       this.renderer.addTerminalOutput(data);
     });
   }
@@ -102,55 +134,65 @@ class Terminal {
   }
 
   handleKeyPress(key, mods) {
+    if (!this.shell) return;
+
     // Handle special keys
     switch (key) {
       case glfw.KEY_ENTER:
-        this.shell.write('\r');
+        this.shell.write("\r");
         break;
       case glfw.KEY_BACKSPACE:
-        this.shell.write('\x7f');
+        this.shell.write("\x7f");
         break;
       case glfw.KEY_TAB:
-        this.shell.write('\t');
+        this.shell.write("\t");
         break;
       case glfw.KEY_UP:
-        this.shell.write('\x1b[A');
+        this.shell.write("\x1b[A");
         break;
       case glfw.KEY_DOWN:
-        this.shell.write('\x1b[B');
+        this.shell.write("\x1b[B");
         break;
       case glfw.KEY_LEFT:
-        this.shell.write('\x1b[D');
+        this.shell.write("\x1b[D");
         break;
       case glfw.KEY_RIGHT:
-        this.shell.write('\x1b[C');
+        this.shell.write("\x1b[C");
         break;
       case glfw.KEY_ESCAPE:
-        this.shell.write('\x1b');
+        this.shell.write("\x1b");
         break;
     }
   }
 
   handleCharInput(char) {
-    this.shell.write(char);
+    if (this.shell) {
+      this.shell.write(char);
+    }
   }
 
   handleResize(width, height) {
     this.config.width = width;
     this.config.height = height;
-    
-    // Update GL context
-    this.glContext = gl(width, height, {
-      preserveDrawingBuffer: true
-    });
-    
+
+    // Update GL context if available
+    if (gl) {
+      this.glContext = gl(width, height, {
+        preserveDrawingBuffer: true,
+      });
+    }
+
     // Update renderer
-    this.renderer.resize(width, height);
-    
+    if (this.renderer && this.renderer.resize) {
+      this.renderer.resize(width, height);
+    }
+
     // Update PTY size
-    const cols = Math.floor(width / this.renderer.getCharWidth());
-    const rows = Math.floor(height / this.renderer.getCharHeight());
-    this.shell.resize(cols, rows);
+    if (this.shell && this.renderer) {
+      const cols = Math.floor(width / this.renderer.getCharWidth());
+      const rows = Math.floor(height / this.renderer.getCharHeight());
+      this.shell.resize(cols, rows);
+    }
   }
 
   renderLoop() {
@@ -164,7 +206,7 @@ class Terminal {
 
       // Swap buffers
       glfw.swapBuffers(this.window);
-      
+
       // Poll events
       glfw.pollEvents();
     }
@@ -186,15 +228,44 @@ class Terminal {
 
   emit(event, ...args) {
     if (this.eventHandlers[event]) {
-      this.eventHandlers[event].forEach(handler => handler(...args));
+      this.eventHandlers[event].forEach((handler) => handler(...args));
     }
+  }
+
+  async startHeadless() {
+    console.log("Starting in headless mode...");
+
+    // Initialize shell
+    this.initializeShell();
+
+    // Set up a simple renderer that doesn't require OpenGL
+    this.renderer = new TerminalRenderer(null, this.config);
+
+    // Emit startup event
+    this.emit("startup");
+
+    if (this.shell) {
+      // Simple event loop for headless mode
+      this.shell.on("data", (data) => {
+        process.stdout.write(data);
+      });
+    } else {
+      console.log("No PTY available. Running in basic mode.");
+      process.stdin.on("data", (data) => {
+        process.stdout.write(data);
+      });
+    }
+
+    console.log("Headless terminal started.");
   }
 
   cleanup() {
     if (this.shell) {
       this.shell.destroy();
     }
-    glfw.terminate();
+    if (glfw) {
+      glfw.terminate();
+    }
   }
 }
 
@@ -209,6 +280,11 @@ class TerminalRenderer {
   }
 
   async initialize() {
+    if (!this.gl) {
+      console.log("No OpenGL context available, using software rendering");
+      return;
+    }
+
     // Initialize OpenGL resources
     this.setupShaders();
     this.setupTextures();
@@ -221,16 +297,16 @@ class TerminalRenderer {
         background: [0.1, 0.1, 0.1, 1.0],
         foreground: [1.0, 1.0, 1.0, 1.0],
         cursor: [0.5, 0.5, 1.0, 1.0],
-        selection: [0.3, 0.3, 0.5, 0.5]
+        selection: [0.3, 0.3, 0.5, 0.5],
       },
       light: {
         background: [1.0, 1.0, 1.0, 1.0],
         foreground: [0.0, 0.0, 0.0, 1.0],
         cursor: [0.0, 0.5, 1.0, 1.0],
-        selection: [0.7, 0.7, 0.9, 0.5]
-      }
+        selection: [0.7, 0.7, 0.9, 0.5],
+      },
     };
-    
+
     return themes[themeName] || themes.dark;
   }
 
@@ -260,22 +336,27 @@ class TerminalRenderer {
     `;
 
     // Compile shaders (simplified)
-    this.shaderProgram = this.createShaderProgram(vertexShaderSource, fragmentShaderSource);
+    this.shaderProgram = this.createShaderProgram(
+      vertexShaderSource,
+      fragmentShaderSource,
+    );
   }
 
   createShaderProgram(vertexSource, fragmentSource) {
     // Simplified shader creation
     return {
       use: () => {},
-      setUniform: (name, value) => {}
+      setUniform: (name, value) => {},
     };
   }
 
   setupTextures() {
+    if (!this.gl) return;
+
     // Setup font texture (simplified)
     this.fontTexture = this.gl.createTexture();
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.fontTexture);
-    
+
     // Create a simple 1x1 white texture for now
     this.gl.texImage2D(
       this.gl.TEXTURE_2D,
@@ -286,17 +367,17 @@ class TerminalRenderer {
       0,
       this.gl.RGBA,
       this.gl.UNSIGNED_BYTE,
-      new Uint8Array([255, 255, 255, 255])
+      new Uint8Array([255, 255, 255, 255]),
     );
   }
 
   setupBuffers() {
+    if (!this.gl) return;
+
     // Setup vertex buffers for quad rendering
     const vertices = new Float32Array([
-      -1.0, -1.0,  0.0, 0.0,
-       1.0, -1.0,  1.0, 0.0,
-      -1.0,  1.0,  0.0, 1.0,
-       1.0,  1.0,  1.0, 1.0,
+      -1.0, -1.0, 0.0, 0.0, 1.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, 1.0, 1.0,
+      1.0, 1.0,
     ]);
 
     this.vertexBuffer = this.gl.createBuffer();
@@ -309,6 +390,10 @@ class TerminalRenderer {
   }
 
   render() {
+    if (!this.gl) {
+      return; // Skip rendering if no OpenGL context
+    }
+
     // Clear with theme background
     this.gl.clearColor(...this.theme.background);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
@@ -321,13 +406,17 @@ class TerminalRenderer {
   }
 
   renderTerminalContent() {
+    if (!this.gl) return;
+
     // Simplified rendering - just draw a background for now
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
   }
 
   resize(width, height) {
-    this.gl.viewport(0, 0, width, height);
+    if (this.gl) {
+      this.gl.viewport(0, 0, width, height);
+    }
   }
 
   getCharWidth() {

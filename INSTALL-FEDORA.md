@@ -23,8 +23,7 @@ If you prefer manual installation or want to understand each step:
 sudo dnf update -y
 
 # Install development tools
-sudo dnf groupinstall -y "Development Tools"
-sudo dnf install -y gcc gcc-c++ make cmake git curl wget python3 python3-pip
+sudo dnf5 install -y gcc gcc-c++ make cmake git curl wget python3 python3-pip autoconf automake libtool pkg-config which
 
 # Install Node.js (latest LTS)
 curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash -
@@ -35,7 +34,7 @@ sudo dnf install -y nodejs
 
 ```bash
 # OpenGL and graphics libraries
-sudo dnf install -y \
+sudo dnf5 install -y \
     mesa-libGL-devel \
     mesa-libGLU-devel \
     libX11-devel \
@@ -45,7 +44,9 @@ sudo dnf install -y \
     libXinerama-devel \
     libXxf86vm-devel \
     glfw-devel \
-    glew-devel
+    glew-devel \
+    libGL-devel \
+    libGLU-devel
 
 # Font libraries
 sudo dnf install -y \
@@ -58,7 +59,7 @@ sudo dnf install -y \
 
 ```bash
 # Install Nerd Fonts
-sudo dnf install -y \
+sudo dnf5 install -y \
     jetbrains-mono-fonts \
     fira-code-fonts
 ```
@@ -156,7 +157,7 @@ nixi-terminal
 ```bash
 # Install Node.js properly
 curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash -
-sudo dnf install -y nodejs
+sudo dnf5 install -y nodejs
 ```
 
 #### 2. OpenGL Issues
@@ -165,7 +166,7 @@ sudo dnf install -y nodejs
 glxinfo | grep "OpenGL renderer"
 
 # Install Mesa drivers
-sudo dnf install -y mesa-dri-drivers
+sudo dnf5 install -y mesa-dri-drivers
 ```
 
 #### 3. Permission Denied
@@ -178,7 +179,7 @@ chmod +x install-fedora.sh
 #### 4. Missing Libraries
 ```bash
 # Install missing development libraries
-sudo dnf install -y libX11-devel libXcursor-devel libXi-devel
+sudo dnf5 install -y libX11-devel libXcursor-devel libXi-devel
 ```
 
 #### 5. GPU Acceleration Not Working
@@ -240,7 +241,9 @@ rm -rf ~/.local/share/applications/nixi-terminal.desktop
 rm -rf ~/.config/nixi-terminal
 
 # Remove from alternatives (if set as default)
-sudo update-alternatives --remove x-terminal-emulator /path/to/terminal.dev/src/index.js
+if command -v update-alternatives &> /dev/null; then
+    sudo update-alternatives --remove x-terminal-emulator /path/to/terminal.dev/src/index.js
+fi
 ```
 
 ## 📚 Next Steps
