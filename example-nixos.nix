@@ -1,49 +1,45 @@
-# Example NixOS configuration using Reanimation Terminal
+# Example NixOS configuration using Nixi Terminal
 { config, lib, pkgs, ... }:
 
 {
-  # Import the Reanimation Terminal module
-  imports = [
-    ./reanimation.nix  # Or use the flake: inputs.reanimation.nixosModules.default
-  ];
+  imports = [ ./reanimation.nix ];
 
-  # Enable and configure Kitty
-  programs.kitty = {
+  programs.nixi-terminal = {
     enable = true;
-
-    # Choose theme
-    theme = "dracula";  # Options: dracula, nord, solarized-dark
-
-    # Font configuration
+    theme = "dracula";
     font = {
       family = "JetBrains Mono Nerd Font";
-      size = 12;
+      size = 14;
     };
-
-    # Window settings
-    window = {
-      padding = {
-        x = 15;
-        y = 15;
-      };
-      hideDecorations = false;
-    };
-
-    # Scrollback
-    scrollback.lines = 20000;
-
-    # Custom keybindings
-    keybindings = {
-      "ctrl+shift+c" = "copy_to_clipboard";
-      "ctrl+shift+v" = "paste_from_clipboard";
-      "ctrl+shift+t" = "new_tab";
-      "ctrl+shift+w" = "close_tab";
-      "ctrl+shift+enter" = "new_window";
-      "ctrl+shift+q" = "close_window";
-      "ctrl+shift+l" = "next_tab";
-      "ctrl+shift+h" = "previous_tab";
-      "ctrl+shift+equal" = "increase_font_size";
-      "ctrl+shift+minus" = "decrease_font_size";
+    gpuAcceleration = true;
+    
+    scripts = {
+      startup = ''
+        echo "🚀 Welcome to Nixi Terminal on NixOS!"
+        echo "System: $(uname -a)"
+        echo "Theme: dracula"
+        echo "GPU Acceleration: enabled"
+        echo ""
+        echo "Type '.nixi help' for scripting commands"
+      '';
+      
+      gitStatus = ''
+        if git rev-parse --git-dir > /dev/null 2>&1; then
+          echo "📁 Git Repository: $(git config --get remote.origin.url || 'local')"
+          echo "🌿 Branch: $(git branch --show-current)"
+          echo "📊 Status: $(git status --porcelain | wc -l) modified files"
+        else
+          echo "Not a git repository"
+        fi
+      '';
+      
+      systemInfo = ''
+        echo "💻 System Information:"
+        echo "  Kernel: $(uname -r)"
+        echo "  Uptime: $(uptime -p)"
+        echo "  Memory: $(free -h | grep '^Mem:' | awk '{print $3 "/" $2}')"
+        echo "  Disk: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
+      '';
     };
   };
 

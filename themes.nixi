@@ -1,0 +1,210 @@
+# Nixi Terminal Themes
+
+let
+  # Theme definitions
+  themes = {
+    dark = {
+      background = "#1a1a1a";
+      foreground = "#ffffff";
+      cursor = "#00ff00";
+      selection = "#333333";
+      
+      # ANSI colors
+      colors = [
+        "#000000"  # black
+        "#ff5555"  # red
+        "#50fa7b"  # green
+        "#f1fa8c"  # yellow
+        "#bd93f9"  # blue
+        "#ff79c6"  # magenta
+        "#8be9fd"  # cyan
+        "#ffffff"  # white
+        "#555555"  # bright black
+        "#ff6e6e"  # bright red
+        "#69ff94"  # bright green
+        "#ffffa5"  # bright yellow
+        "#d6acff"  # bright blue
+        "#ff92df"  # bright magenta
+        "#a4ffff"  # bright cyan
+        "#ffffff"  # bright white
+      ];
+    };
+    
+    light = {
+      background = "#ffffff";
+      foreground = "#000000";
+      cursor = "#0000ff";
+      selection = "#cccccc";
+      
+      colors = [
+        "#000000"
+        "#cc0000"
+        "#4e9a06"
+        "#c4a000"
+        "#3465a4"
+        "#75507b"
+        "#06989a"
+        "#d3d7cf"
+        "#555753"
+        "#ef2929"
+        "#8ae234"
+        "#fce94f"
+        "#729fcf"
+        "#ad7fa8"
+        "#34e2e2"
+        "#eeeeec"
+      ];
+    };
+    
+    dracula = {
+      background = "#282a36";
+      foreground = "#f8f8f2";
+      cursor = "#f8f8f2";
+      selection = "#44475a";
+      
+      colors = [
+        "#21222c"
+        "#ff5555"
+        "#50fa7b"
+        "#f1fa8c"
+        "#bd93f9"
+        "#ff79c6"
+        "#8be9fd"
+        "#f8f8f2"
+        "#6272a4"
+        "#ff6e6e"
+        "#69ff94"
+        "#ffffa5"
+        "#d6acff"
+        "#ff92df"
+        "#a4ffff"
+        "#ffffff"
+      ];
+    };
+    
+    nord = {
+      background = "#2e3440";
+      foreground = "#d8dee9";
+      cursor = "#d8dee9";
+      selection = "#434c5e";
+      
+      colors = [
+        "#3b4252"
+        "#bf616a"
+        "#a3be8c"
+        "#ebcb8b"
+        "#5e81ac"
+        "#b48ead"
+        "#88c0d0"
+        "#e5e9f0"
+        "#4c566a"
+        "#d08770"
+        "#b3e3a5"
+        "#ebd09a"
+        "#81a1c1"
+        "#c991b1"
+        "#93d1e3"
+        "#eceff4"
+      ];
+    };
+  };
+  
+  # Theme application function
+  applyTheme = theme: terminal: {
+    background = themes.${theme}.background;
+    foreground = themes.${theme}.foreground;
+    cursor = themes.${theme}.cursor;
+    selection = themes.${theme}.selection;
+    colors = themes.${theme}.colors;
+  };
+  
+  # Terminal configuration with theme
+  terminalConfig = {
+    theme ? "dark";
+    font ? {
+      family = "JetBrains Mono";
+      size = 12;
+    };
+    window ? {
+      width = 800;
+      height = 600;
+      padding = { x = 10; y = 10; };
+    };
+    gpuAcceleration = true;
+  }: {
+    # Apply theme
+    appearance = applyTheme theme {};
+    
+    # Font configuration
+    font = {
+      inherit (font) family size;
+      bold = true;
+      italic = true;
+    };
+    
+    # Window settings
+    window = {
+      inherit (window) width height padding;
+      opacity = 0.95;
+      decorations = true;
+      resizable = true;
+    };
+    
+    # Performance settings
+    performance = {
+      gpu = gpuAcceleration;
+      vsync = true;
+      maxFPS = 60;
+    };
+    
+    # Shell integration
+    shell = {
+      program = "${builtins.getEnv "SHELL"}";
+      args = [];
+      env = {};
+    };
+    
+    # Keybindings
+    keybindings = {
+      "ctrl+shift+c" = "copy_to_clipboard";
+      "ctrl+shift+v" = "paste_from_clipboard";
+      "ctrl+shift+t" = "new_tab";
+      "ctrl+shift+w" = "close_tab";
+      "ctrl+shift+pageup" = "previous_tab";
+      "ctrl+shift+pagedown" = "next_tab";
+      "ctrl+shift+enter" = "fullscreen";
+    };
+    
+    # Nixi scripting hooks
+    scripts = {
+      startup = ''
+        echo "Welcome to Nixi Terminal!"
+        echo "Theme: ${theme}"
+        echo "Type '.nixi help' for scripting commands"
+      '';
+      
+      preCommand = ''
+        # Execute before each command
+        let currentDir = pwd();
+        if currentDir != $LAST_DIR then
+          echo "Changed directory: " + currentDir
+        fi
+      '';
+      
+      postCommand = ''
+        # Execute after each command
+        set LAST_DIR = pwd()
+      '';
+    };
+  };
+
+in
+{
+  inherit themes terminalConfig applyTheme;
+  
+  # Predefined configurations
+  darkTerminal = terminalConfig { theme = "dark"; };
+  lightTerminal = terminalConfig { theme = "light"; };
+  draculaTerminal = terminalConfig { theme = "dracula"; };
+  nordTerminal = terminalConfig { theme = "nord"; };
+}

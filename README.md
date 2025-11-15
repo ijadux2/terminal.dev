@@ -1,201 +1,271 @@
-# 🐱 Reanimation Terminal
+# 🚀 Nixi Terminal
 
-A GPU-accelerated Linux terminal emulator built with Nix, featuring custom themes and declarative configuration.
+An advanced terminal emulator built with Nix and Nixi scripting support, featuring GPU acceleration and declarative configuration.
 
-## Features
+## ✨ Features
 
-- 🚀 **GPU Acceleration**: Powered by Kitty's OpenGL rendering for smooth performance
-- 🎨 **Custom Themes**: Pre-configured themes (Dracula, Nord, Solarized Dark) with easy switching
-- 📦 **Nix Integration**: Declarative configuration using Nix syntax
-- 🏠 **Home Manager Support**: Per-user configuration
-- 🖥️ **NixOS Support**: System-wide installation
-- ⌨️ **Custom Keybindings**: Fully customizable shortcuts
-- 🔧 **Modular Design**: Enable/disable features as needed
+- 🎯 **Nixi Scripting**: Full Nixi language integration for terminal automation
+- 🚀 **GPU Acceleration**: Hardware-accelerated rendering with OpenGL
+- 🎨 **Advanced Theming**: Declarative themes with Nixi styling system
+- ⚡ **High Performance**: Optimized rendering pipeline with fallback support
+- 📦 **Nix Integration**: First-class NixOS and Home Manager support
+- 🔧 **Modular Design**: Extensible architecture with plugin system
+- 🖥️ **Cross-Platform**: Linux support with Wayland/X11 compatibility
 
-## Quick Start
-
-### Using Nix Flakes
-
-Add Reanimation Terminal to your `flake.nix`:
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    reanimation.url = "path:./terminal.dev";  # Or use a Git URL
-  };
-
-  outputs = { self, nixpkgs, reanimation, ... }: {
-    nixosConfigurations.yourhost = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        reanimation.nixosModules.default
-        {
-          programs.kitty = {
-            enable = true;
-            theme = "dracula";
-          };
-        }
-      ];
-    };
-  };
-}
-```
+## 🚀 Quick Start
 
 ### NixOS Configuration
 
 ```nix
-{ config, lib, pkgs, ... }:
-
+{ config, pkgs, ... }:
 {
   imports = [ ./reanimation.nix ];
-
-  programs.kitty = {
+  
+  programs.nixi-terminal = {
     enable = true;
     theme = "dracula";
     font = {
       family = "JetBrains Mono Nerd Font";
-      size = 12;
+      size = 14;
+    };
+    gpuAcceleration = true;
+    
+    scripts = {
+      startup = ''
+        echo "🚀 Welcome to Nixi Terminal!"
+        echo "Type '.nixi help' for scripting commands"
+      '';
     };
   };
+  
+  hardware.graphics.enable = true;  # For GPU acceleration
 }
 ```
 
 ### Home Manager Configuration
 
 ```nix
-{ config, lib, pkgs, ... }:
-
+{ config, pkgs, ... }:
 {
   imports = [ ./reanimation.nix ];
-
-  programs.kitty = {
+  
+  programs.nixi-terminal = {
     enable = true;
-    theme = "nord";
-    window.hideDecorations = true;
+    config = ''
+      let themes = import ./themes.nixi;
+      in themes.terminalConfig {
+        theme = "nord";
+        font = { family = "JetBrains Mono"; size = 12; };
+        gpuAcceleration = true;
+      }
+    '';
   };
 }
 ```
 
-## Configuration Options
+## 🎨 Themes
 
-### Themes
+Built-in themes:
+- **dark**: Classic dark theme
+- **light**: Clean light theme  
+- **dracula**: Vibrant Dracula colors
+- **nord**: Arctic-inspired palette
 
-Available themes:
-- `dracula` (default): Dark theme with vibrant colors
-- `nord`: Arctic-inspired color palette
-- `solarized-dark`: Low-contrast dark theme
+### Custom Themes with Nixi
 
-### Font Settings
-
-```nix
-programs.kitty.font = {
-  family = "JetBrains Mono Nerd Font";
-  size = 12;
-};
+```nixi
+let
+  customTheme = {
+    background = "#1e1e2e";
+    foreground = "#cdd6f4";
+    cursor = "#f38ba8";
+    colors = [
+      "#45475a" "#f38ba8" "#a6e3a1" "#f9e2af"
+      "#89b4fa" "#f5c2e7" "#94e2d5" "#bac2de"
+    ];
+  };
+in
+{
+  appearance = customTheme;
+  font = { family = "JetBrains Mono"; size = 14; };
+}
 ```
 
-### Window Customization
+## 🔧 Nixi Scripting
+
+Nixi Terminal integrates the Nixi programming language for powerful terminal automation:
+
+### Basic Commands
+
+```bash
+# Execute Nixi scripts in terminal
+.nixi echo "Hello from Nixi!"
+.nixi theme dracula
+.nixi clear
+
+# System information
+.nixi systemInfo
+.nixi gitStatus
+```
+
+### Advanced Scripting
+
+```nixi
+# Custom startup script
+let
+  greet = name: "Hello, " + name + "!";
+  currentTime = __builtin_time();
+in
+{
+  startup = ''
+    echo "🚀 Nixi Terminal started at " + currentTime
+    echo greet "User"
+    echo "System: " + __builtin_uname()
+  '';
+  
+  # Git integration
+  preCommand = ''
+    if __builtin_git_status() != "" then
+      echo "🌿 Git: " + __builtin_git_branch()
+    fi
+  '';
+}
+```
+
+## 🖥️ Development
+
+### Development Environment
+
+```bash
+# Clone and setup
+git clone <repository>
+cd terminal.dev
+nix develop
+
+# Install dependencies
+npm install
+
+# Run in development mode
+npm run dev
+
+# Build for production
+npm run build
+```
+
+### Project Structure
+
+```
+terminal.dev/
+├── src/
+│   ├── index.js           # Main entry point
+│   ├── terminal.js        # Terminal core
+│   ├── nixi-engine.js     # Nixi scripting engine
+│   └── gpu-renderer.js    # GPU acceleration
+├── themes.nixi            # Theme definitions
+├── flake.nix              # Nix flake configuration
+├── package.json           # Node.js dependencies
+└── examples/              # Configuration examples
+```
+
+## ⚡ Performance
+
+### GPU Acceleration
+
+Nixi Terminal uses OpenGL for hardware-accelerated rendering:
+
+- **Vertex Shaders**: Efficient character rendering
+- **Fragment Shaders**: Advanced text effects and animations
+- **Frame Buffers**: Offscreen rendering for smooth scrolling
+- **Texture Management**: Optimized font and background rendering
+
+### Fallback Support
+
+If GPU acceleration isn't available, the terminal automatically falls back to software rendering while maintaining full functionality.
+
+## 🔌 Configuration Options
+
+### Terminal Settings
 
 ```nix
-programs.kitty.window = {
-  padding = {
-    x = 15;
-    y = 15;
+{
+  # Window configuration
+  window = {
+    width = 1024;
+    height = 768;
+    padding = { x = 20; y = 20; };
+    opacity = 0.95;
+    decorations = true;
   };
-  hideDecorations = false;
-};
+  
+  # Performance settings
+  performance = {
+    gpu = true;
+    vsync = true;
+    maxFPS = 60;
+  };
+  
+  # Shell integration
+  shell = {
+    program = "${pkgs.bash}/bin/bash";
+    args = ["--login"];
+    env = { EDITOR = "nvim"; };
+  };
+}
 ```
 
 ### Keybindings
 
 ```nix
-programs.kitty.keybindings = {
-  "ctrl+shift+c" = "copy_to_clipboard";
-  "ctrl+shift+v" = "paste_from_clipboard";
-  "ctrl+shift+t" = "new_tab";
-};
+{
+  keybindings = {
+    "ctrl+shift+c" = "copy_to_clipboard";
+    "ctrl+shift+v" = "paste_from_clipboard";
+    "ctrl+shift+t" = "new_tab";
+    "ctrl+shift+w" = "close_tab";
+    "ctrl+shift+enter" = "fullscreen";
+    "f11" = "toggle_fullscreen";
+  };
+}
 ```
 
-## GPU Acceleration
-
-Reanimation Terminal uses Kitty's GPU-accelerated rendering by default. Ensure your system has proper OpenGL drivers:
-
-- **NixOS**: `hardware.graphics.enable = true;`
-- **GPU Drivers**: Mesa is included automatically
-
-To verify GPU acceleration:
-```bash
-kitty --debug-config | grep OpenGL
-```
-
-## Theme Switching
-
-Use the included theme switcher script:
+## 🧪 Testing
 
 ```bash
-./theme-switcher.sh dracula
-./theme-switcher.sh nord
-./theme-switcher.sh solarized-dark
+# Run tests
+npm test
+
+# Lint code
+npm run lint
+
+# Format code
+npm run format
 ```
 
-## Development
+## 📚 Documentation
 
-### Development Environment
+- **[Nixi Language Guide](../nixi/README.md)** - Complete Nixi language reference
+- **[Theme Development](themes.nixi)** - Creating custom themes
+- **[Scripting API](src/nixi-engine.js)** - Terminal scripting interface
+- **[GPU Rendering](src/gpu-renderer.js)** - Graphics acceleration details
 
-```bash
-cd terminal.dev
-nix develop
-kitty  # Test the terminal
-```
+## 🤝 Contributing
 
-### Building
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-```bash
-# Build with Nix
-nix build
+## 📄 License
 
-# Run tests (if any)
-nix flake check
-```
+MIT License - see [LICENSE](LICENSE) for details.
 
-## Examples
+## 🔗 Links
 
-See the `example-*.nix` files for complete configuration examples.
+- **Nixi Language**: [../nixi/](../nixi/)
+- **Issues**: Report bugs and feature requests
+- **Discussions**: Community discussions and Q&A
 
-## Dependencies
+---
 
-- Nix (flakes enabled)
-- Kitty terminal emulator
-- Mesa (for GPU acceleration)
-- Nerd Fonts (for icons)
-
-## Troubleshooting
-
-### GPU Issues
-
-If GPU acceleration isn't working:
-1. Check OpenGL drivers: `glxinfo | grep renderer`
-2. Ensure Mesa is installed
-3. Try running with `LIBGL_ALWAYS_SOFTWARE=1 kitty` to force software rendering
-
-### Theme Not Applying
-
-1. Restart Kitty after configuration changes
-2. Check Kitty config: `kitty --debug-config`
-3. Verify NixOS/Home Manager rebuild
-
-### Font Issues
-
-1. Install Nerd Fonts: `nerdfonts.override { fonts = [ "JetBrainsMono" ]; }`
-2. Check font availability: `fc-list | grep "JetBrains"`
-
-## License
-
-MIT License - see LICENSE for details.
-
-## Acknowledgments
-
-- Built on top of [Kitty](https://sw.kovidgoyal.net/kitty/)
-- Inspired by modern terminal emulators
-- Powered by Nix for reproducible builds
+*Nixi Terminal - Where functional programming meets terminal emulation* 🚀
